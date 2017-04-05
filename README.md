@@ -15,7 +15,7 @@ $ go get github.com/reinventer/grpc-lb-test
 ```
 $ grpc-lb-test
 ```
-* Try to add/remove available servers to etcd (now balancer deadlocks when the key is removed from etcd):
+* Try to add/remove available servers to etcd:
 ```sh
   $ etcdctl set balancer/service/server2 localhost:15082
   $ etcdctl rm balancer/service/server1

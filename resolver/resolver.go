@@ -1,6 +1,7 @@
 package resolver
 
 import (
+	"errors"
 	"github.com/coreos/etcd/client"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/naming"
@@ -36,6 +37,7 @@ type watch struct {
 	updates []*naming.Update
 	stop    context.CancelFunc
 	done    chan struct{}
+	updated chan struct{}
 }
 
 func newWatcher(target string, api client.KeysAPI) (*watch, error) {
@@ -51,9 +53,11 @@ func newWatcher(target string, api client.KeysAPI) (*watch, error) {
 		return nil, err
 	}
 
-	if res.Node.Dir {
-		w.addUpdates(naming.Add, res.Node.Nodes...)
+	if !res.Node.Dir {
+		return nil, errors.New(`wrong node`)
 	}
+	w.updated = make(chan struct{})
+	w.addUpdates(naming.Add, res.Node.Nodes...)
 
 	w.done = make(chan struct{})
 	go func() {
@@ -77,9 +81,11 @@ func newWatcher(target string, api client.KeysAPI) (*watch, error) {
 }
 
 func (w *watch) Next() ([]*naming.Update, error) {
+	<-w.updated
 	w.Lock()
 	defer func() {
 		w.updates = nil
+		w.updated = make(chan struct{})
 		w.Unlock()
 	}()
 	return w.updates, nil
@@ -99,5 +105,6 @@ func (w *watch) addUpdates(op naming.Operation, nodes ...*client.Node) {
 		})
 
 	}
+	close(w.updated)
 	w.Unlock()
 }
