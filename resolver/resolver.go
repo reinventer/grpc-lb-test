@@ -68,7 +68,7 @@ func newWatcher(target string, api client.KeysAPI) (*watch, error) {
 			case `set`, `update`, `create`:
 				w.addUpdates(naming.Add, res.Node)
 			case `delete`:
-				w.addUpdates(naming.Delete, res.Node)
+				w.addUpdates(naming.Delete, res.PrevNode)
 			}
 		}
 	}()
@@ -97,6 +97,7 @@ func (w *watch) addUpdates(op naming.Operation, nodes ...*client.Node) {
 			Op:   op,
 			Addr: n.Value,
 		})
+
 	}
 	w.Unlock()
 }
