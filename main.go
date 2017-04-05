@@ -7,8 +7,8 @@ import (
 	"net"
 	"sync"
 
-	"github.com/reinventer/grpc-lb-test/balancer"
 	"github.com/reinventer/grpc-lb-test/proto"
+	"github.com/reinventer/grpc-lb-test/resolver"
 	"github.com/reinventer/grpc-lb-test/server"
 	"golang.org/x/net/context"
 	"time"
@@ -25,7 +25,11 @@ func main() {
 		mtx             sync.Mutex
 	)
 
-	b := balancer.New(`http://127.0.0.1:2379`)
+	res, err := resolver.New(`/v2/keys/balancer`, `http://127.0.0.1:2379`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	b := grpc.RoundRobin(res)
 
 	startWg.Add(SERVERS_NUM)
 	stopWg.Add(SERVERS_NUM)
@@ -44,11 +48,11 @@ func main() {
 			servers = append(servers, grpcSrv)
 			mtx.Unlock()
 			startWg.Done()
-			// TODO: set in etcd /service/[uuid] => localhost:[addr]
+			// TODO: set in etcd /v2/keys/balancer/service/[uuid] => localhost:[addr]
 
 			grpcSrv.Serve(lis)
 			stopWg.Done()
-			// TODO: remove from etcd /service/[uuid]
+			// TODO: remove from etcd /v2/keys/balancer/service/[uuid]
 		}(i)
 	}
 
