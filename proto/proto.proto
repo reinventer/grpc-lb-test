@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package proto;
+
+service LBTest {
+    rpc Who(Empty) returns (ID) {}
+}
+
+message Empty {}
+message ID {
+    string ID = 1;
+}
