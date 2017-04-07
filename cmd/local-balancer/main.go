@@ -1,4 +1,4 @@
-package local_balancer
+package main
 
 import (
 	"fmt"
@@ -6,12 +6,12 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/reinventer/grpc-lb-test/proto"
 	"github.com/reinventer/grpc-lb-test/resolver"
 	"github.com/reinventer/grpc-lb-test/server"
 	"golang.org/x/net/context"
-	"time"
 )
 
 const (
@@ -35,7 +35,7 @@ func main() {
 	stopWg.Add(SERVERS_NUM)
 	for i := 0; i < SERVERS_NUM; i++ {
 		go func(i int) {
-			addr := fmt.Sprintf(`localhost:%d`, 15080+i)
+			addr := fmt.Sprintf(`127.0.0.1:%d`, 15080+i)
 			lis, err := net.Listen(`tcp`, addr)
 			if err != nil {
 				panic(err)
@@ -48,7 +48,7 @@ func main() {
 			servers = append(servers, grpcSrv)
 			mtx.Unlock()
 			startWg.Done()
-			// TODO: set in etcd /v2/keys/balancer/service/[uuid] => localhost:[addr]
+			// TODO: set in etcd /v2/keys/balancer/service/[uuid] => 127.0.0.1:[addr]
 
 			grpcSrv.Serve(lis)
 			stopWg.Done()
