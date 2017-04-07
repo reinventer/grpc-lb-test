@@ -23,7 +23,7 @@ type balancer struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	api     client.KeysAPI
-	cnt     int
+	wg      sync.WaitGroup
 	stopped bool
 }
 
@@ -54,13 +54,11 @@ func (b *balancer) BalanceLoad(stream lbpb.LoadBalancer_BalanceLoadServer) error
 		b.Unlock()
 		return status.Error(codes.Aborted, `balancer stopped`)
 	}
-	b.cnt += 1
 	b.Unlock()
+	b.wg.Add(1)
 
 	defer func() {
-		b.Lock()
-		b.cnt -= 1
-		b.Unlock()
+		b.wg.Done()
 	}()
 
 	req, err := stream.Recv()
@@ -96,8 +94,12 @@ func (b *balancer) BalanceLoad(stream lbpb.LoadBalancer_BalanceLoadServer) error
 }
 
 func (b *balancer) Close() {
+	b.Lock()
+	b.stopped = true
+	b.Unlock()
+
 	b.cancel()
-	//TODO wait
+	b.wg.Wait()
 }
 
 func (b *balancer) updates(target string) (<-chan *lbpb.ServerList, error) {

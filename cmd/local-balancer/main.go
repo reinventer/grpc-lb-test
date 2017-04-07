@@ -59,7 +59,7 @@ func main() {
 	startWg.Wait()
 	log.Printf(`started %d servers`, SERVERS_NUM)
 
-	conn, err := grpc.Dial(`service`, grpc.WithBalancer(b), grpc.WithInsecure())
+	conn, err := grpc.Dial(`service`, grpc.WithBalancer(b), grpc.WithBlock(), grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,7 +67,6 @@ func main() {
 
 	cli := proto.NewLBTestClient(conn)
 
-	time.Sleep(time.Second)
 	for {
 		id, err := cli.Who(context.Background(), &proto.Empty{})
 		if err != nil {

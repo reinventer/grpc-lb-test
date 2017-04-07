@@ -86,18 +86,22 @@ func main() {
 	}()
 	<-lbstart
 
-	res := &remoteResolver{
-		w: &watcher{
-			balancers: []*naming.Update{
-				{
-					Op:   naming.Add,
-					Addr: addrBal,
-					Metadata: &grpclb.Metadata{
-						AddrType: grpclb.GRPCLB,
-					},
+	servers = append(servers, lbsrv)
+
+	w := &watcher{
+		balancers: []*naming.Update{
+			{
+				Op:   naming.Add,
+				Addr: addrBal,
+				Metadata: &grpclb.Metadata{
+					AddrType: grpclb.GRPCLB,
 				},
 			},
 		},
+	}
+
+	res := &remoteResolver{
+		w: w,
 	}
 
 	b := grpclb.Balancer(res)
@@ -134,11 +138,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer conn.Close()
 
 	cli := proto.NewLBTestClient(conn)
 
-	time.Sleep(time.Second)
 	for {
 		id, err := cli.Who(context.Background(), &proto.Empty{})
 		if err != nil {
@@ -147,6 +149,9 @@ func main() {
 		log.Printf(`who: %s`, id.ID)
 		time.Sleep(time.Second)
 	}
+
+	balancer.Close()
+	conn.Close()
 
 	for _, s := range servers {
 		s.GracefulStop()
