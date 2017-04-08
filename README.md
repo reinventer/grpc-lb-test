@@ -18,7 +18,7 @@ $ local-balancer
 ```
 if you want to test remote balancer
 ```
-$ local-balancer
+$ remote-balancer
 ```
 
 * Try to add/remove available servers to etcd:
